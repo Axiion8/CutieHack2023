@@ -12,8 +12,8 @@ CATEGORIES = ["Human", "Not Human"]
 for category in CATEGORIES:
     path = os.path.join(DATADIR, category)
     for img in os.listdir(path):
-        img_array = cv2.imread(os.path.join(path, img), cv2.IMREAD_GRAYSCALE)
-        plt.imshow(img_array, cmap ="gray")
+        img_array = cv2.imread(os.path.join(path, img))
+        plt.imshow(img_array)
         break
     break
 
@@ -55,7 +55,7 @@ for features, label in training_data:
     x.append(features)
     y.append(label)
 
-x = np.array(x).reshape(-1, IMG_SIZE, IMG_SIZE, 1) #since working with grayscale
+x = np.array(x).reshape(-1, IMG_SIZE, IMG_SIZE, 3) #We change to RGB
 
 import pickle
 
@@ -69,3 +69,7 @@ pickle_out.close()
 
 pickle_in = open("X.pickle", rb)
 X = pickle.load(pickle_in)
+
+new_model = tf.keras.models.load_model('test.model')
+predictions = new_model.predict([x_test])
+print(np.argmax(predictions[0]))
