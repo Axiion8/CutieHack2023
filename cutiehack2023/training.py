@@ -5,6 +5,7 @@ import os
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
+from tensorflow.keras.metrics import Precision, Recall, BinaryAccuracy
 import random
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,7 +39,7 @@ for image_class in os.listdir(DIRECTORY):
 
 #Loading Data files 
 
-data = tf.keras.utils.image_dataset_from_directory('Datasets', batch_size = 24) #Builds image data set, meaning you need not build classes or labels. 
+data = tf.keras.utils.image_dataset_from_directory('Datasets', batch_size = 2) #Builds image data set, meaning you need not build classes or labels. 
  #Essentially building data pipeline. Automatically reshapes images so its consistent sizes. 
 
 data_iterator = data.as_numpy_iterator() #acesss generator from our data pipeline. Loops through and pulls data continously
@@ -67,8 +68,8 @@ newIterator = data.as_numpy_iterator()
 batch = newIterator.next() # .next() iterates and gives new batch
 
 
-fig, ax = plt.subplots(ncols=4, figsize=(20,20))
-for idx, img in enumerate(batch[0][:2]): #Should display 2 pictures according to dataset
+fig, ax = plt.subplots(ncols=4, figsize=(10,10))
+for idx, img in enumerate(batch[0][:3]): #Should display 2 pictures according to dataset
     ax[idx].imshow(img) #Make sure its not set to integers since values are between 0 to 1. Ex: 0.2 evaluates to 0 which is not what we want 
     ax[idx].title.set_text(batch[1][idx])
 
@@ -120,11 +121,62 @@ model.summary() #Shows how the model transforms data
 #Training
 logdir = 'logs'
 
-tensorboard_callback = tf.keras.callbacks.TensorBoard(DIRECTORY=logdir) #Checks to see how model preforms
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir) #Checks to see how model preforms
 
 #Fit our model:
-hist = model.fit(train, epochs=5, validation_data=val, callbacks=[tensorboard_callback])
+history = model.fit(train, epochs=5, validation_data=val, callbacks=[tensorboard_callback]) #Size of training data must be larger than batch size
 #Epochs tells us how long to train our data, validaiton_data tells us how our data is preforming
 #callbacks allow us to track our information to check history or errors.
 
 
+#Plotting performance
+fig = plt.figure()
+plt.plot(histroy.history['loss'], color = 'red', label = 'loss')
+plt.plot(histroy.history['accuracy'], color = 'green', label = 'accuracy')
+fig.suptitle('Changes over time', fontsize = 20)
+plt.legend(loc = "upper left")
+plt.show()
+
+
+#Preformance metrics
+precision = Precision()
+recall = Recall()
+binaryAcc = BinaryAccuracy()
+
+for batch in test.as_numpy_iterator():
+    x = batch
+    y = batch
+    yPredict = model.predict(x)
+    precision.update_state(y, yPredict)
+    recall.update_state(y, yPpredict)
+    binaryAcc.update_state(y, yPredict)
+
+#print('Precision' {precision.result().numpy()})
+
+img = cv2.imread() #Read NEW image that model hs not scene
+plt.imshow(cv2.cvtColr(img, cv2.COLOR_BGR2RGB)) #converts to normal picture color
+#plt.show()
+
+resize = tf.image.resize(img, (256, 256))
+plt.imshow(resize.numoy().astpye(int))
+plt.show()
+
+resize.shape
+np.expand_dims(resize, 0)
+yPreict = model.predict(np.expand_dims(resize/255,0))
+print(yPredict) # Predicts new image class
+
+if(yPredict > 0.5):
+    print("Not Human")
+else:
+    print("Human")
+
+#saving models
+from tensorflow.keras.models import load_model
+
+model.save(os.path.join('models', 'humanOrNot.h5')) #saves new models each run
+
+new_model = load_model(os.path.join('models','humanOrNot.h5')) #loads model 
+
+#if you want to pass data to it you get a prediciton again: 
+newPrediction2 = new_model.predict(np.expand_dims(resize/255,0))
